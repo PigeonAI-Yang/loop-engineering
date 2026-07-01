@@ -1,5 +1,7 @@
 # PY Loop Engineering
 
+![Loop Engineering cover](assets/loop-engineering-cover.png)
+
 把 AI 开发从「连续提示」变成「可运行、可验证、可复用的工程循环」。
 
 这是一个 Codex Skill。它不是一段临场提示词，而是一套可以落到项目里的 loop engineering harness：每一轮都有输入、边界、状态、验证、停止条件和报告。
@@ -184,4 +186,3 @@ powershell -ExecutionPolicy Bypass -File scripts/check.ps1
 ## 作者
 
 PigeonAI-Yang
-
