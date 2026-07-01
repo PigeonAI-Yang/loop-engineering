@@ -1,4 +1,4 @@
-# Loop Engineering
+# PY Loop Engineering
 
 把 AI 开发从「连续提示」变成「可运行、可验证、可复用的工程循环」。
 
