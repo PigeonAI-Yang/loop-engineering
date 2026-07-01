@@ -1,0 +1,8 @@
+.ai/
+.tmp/
+*.log
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+__pycache__/
+
