@@ -68,6 +68,8 @@ A valid loop must have:
 - a state file
 - stop conditions
 - a budget guard
+- a workspace hygiene guard
+- a checkpoint policy
 - a permission boundary for write-capable tools
 - a report artifact
 
@@ -97,6 +99,10 @@ do one manual run.
 - Can the agent reproduce or inspect the result with local tools?
 - Can the token/tool budget absorb retries and re-reading context without
   surprise spend?
+- If the project uses git, did you record `git status --short` before editing,
+  and can you name which paths this loop owns?
+- If the project uses git and this loop changes files, will successful
+  completion create a local checkpoint commit?
 - Is there a persistent state file and report path outside the chat context?
 - Is there a clear stop condition that does not depend on the maker judging its
   own work?
@@ -116,6 +122,8 @@ Every loop must state its budget before editing code. Defaults:
   explicit user task
 - max automation: none by default; name `manual`, `scheduled`, or `event`
   before creating or running a recurring loop
+- max checkpoint: local `commit-on-success` for loop-owned changes; no push
+  unless the owner explicitly asks
 - max permissions: read-only until the profile names the write-capable
   connector action; human approval before merge, deploy, dependency, credential,
   or production-data changes
@@ -125,12 +133,60 @@ Stop and report instead of continuing when the budget would be exceeded. A loop
 that spends without a verifier is not loop engineering; it is just unattended
 prompting.
 
+## Workspace Hygiene
+
+Long loops fail quietly when every attempt leaves a little more mud in the
+working tree. Treat workspace state as part of the loop contract, not as an
+afterthought.
+
+For projects with git:
+
+- before editing, run `git status --short` and record the output in the state or
+  report as the baseline
+- if the baseline is already dirty, separate pre-existing user changes from the
+  files this loop is allowed to touch
+- before editing, name the loop-owned paths; do not leave changes outside them
+- keep scratch output under a named temp path such as `.ai/loops/tmp` or the
+  project temp directory, and remove it before reporting
+- before checkpointing, run `git status --short` again; the dirty paths must be
+  only intentional loop-owned outputs such as code changes, `.ai/loops/state.json`,
+  and the current report
+- never delete or revert pre-existing dirty files unless the owner explicitly
+  asks for that exact cleanup
+
+For projects without git, list the expected changed paths in the report and
+keep transient files under one removable temp directory.
+
+## Checkpoint Closure
+
+A successful loop that changes files in a git project is not cleanly complete
+until it leaves a local checkpoint commit.
+
+Default policy:
+
+- run the verification gate first
+- update the state and report
+- stage only loop-owned paths, plus `.ai/loops/state.json` and the current
+  report when they exist
+- create one local commit with a short message such as
+  `<loop-type>: <task summary>`
+- run `git status --short` again; it must return to the baseline except for
+  pre-existing dirty paths that were not owned by this loop
+- do not push, merge, tag, deploy, or notify without explicit owner approval
+
+If there are no file changes, record `checkpoint: no-op`. If the commit cannot
+be created or the owner disables commits, write `Clean completion: no`, list the
+uncommitted paths, and stop. Do not call the loop done while its successful
+changes are still only in the working tree.
+
 ## Security Boundary
 
 An unattended loop is an unattended attack surface. Keep the boundary boring:
 
 - parallel agents must use separate worktrees or disjoint write scopes
 - connectors start read-only; write actions must be named in the profile
+- local git commits are checkpoint closure; pushes and remote actions still
+  require explicit owner approval
 - do not auto-install unknown skills or connectors inside a loop
 - do not write secrets, tokens, cookies, or credential material into reports or logs
 - re-audit write-capable connector permissions at least every 30 days for
@@ -165,10 +221,13 @@ An unattended loop is an unattended attack surface. Keep the boundary boring:
    - contract validators
    - product ledger
    - user visual approval
-8. Run the eligibility checklist and write the budget guard.
+8. Run the eligibility checklist and write the budget, workspace hygiene, and
+   checkpoint guards.
 9. Create or update `.ai/loops/LOOP_PROFILE.md` and `.ai/loops/state.json`.
 10. Run only one bounded loop at a time.
 11. After every attempt, write a short report under `.ai/loops/reports/`.
+    Successful git-backed loops that changed files must checkpoint commit before
+    they can be marked cleanly complete.
 
 ## Modes
 
@@ -195,7 +254,8 @@ Use when `.ai/loops/LOOP_PROFILE.md` already exists.
 4. Implement only that loop's current step.
 5. Run the loop's verification command.
 6. Update state and report.
-7. Stop if the gate fails repeatedly or the scope expands.
+7. If the loop changed files in git, create the checkpoint commit.
+8. Stop if the gate fails repeatedly or the scope expands.
 
 ### Repair Loop
 
@@ -211,7 +271,7 @@ Use when a verification gate fails.
 
 Create only loops that the project can actually verify.
 
-- `capability-task`: one task ledger row, one focused gate, one report
+- `capability-task`: one task ledger row, one focused gate, one checkpoint commit
 - `plan-integrity`: plan/task/schema/ledger consistency before coding
 - `regression`: project-wide check before merge or release
 - `source-health`: external source/data-fetch health without pretending product completion
@@ -268,6 +328,8 @@ Stop and ask or report blocked when:
 - the task wants to weaken validation
 - implementation needs broad refactor
 - more than 8 files need edits for one loop step
+- the workspace has unexplained dirty paths outside the loop-owned scope
+- successful loop-owned changes remain uncommitted in a git project
 - two attempts fail for different causes
 - the loop would exceed its stated iteration, time, tool, live-action, or file budget
 - success would require mock data, fake fallback, or hiding an error state
@@ -300,6 +362,9 @@ Files changed:
 Gate: <must be an end-to-end proof, not a unit test. State the command run and
        what it proved about the downstream consuming the output. If only a unit
        test ran, write "UNIT-TEST-ONLY" here and do not mark done.>
+Workspace: <starting git status, owned paths, post-checkpoint git status, and
+            any pre-existing dirty paths left untouched>
+Checkpoint: <commit hash, no-op, or blocked with uncommitted paths>
 Result:
 State update:
 Clean completion:

@@ -167,6 +167,21 @@ if ((Test-Path -LiteralPath $profilePath) -and -not $Force) {
         "- max live actions: only when required by acceptance.",
         "- max permissions: read-only until a write-capable connector action is named; human approval before merge, deploy, dependency, credential, or production-data changes.",
         "",
+        "## Workspace Hygiene",
+        "",
+        "- start status: run git status --short before editing when git is present; record pre-existing dirty paths in state or report.",
+        "- loop-owned paths: name the files or directories this loop may leave changed before editing.",
+        "- transient paths: keep scratch output under .ai/loops/tmp or the project temp directory and remove it before reporting.",
+        "- clean completion: after checkpoint, git status --short must match the baseline except for pre-existing dirty paths left untouched.",
+        "",
+        "## Checkpoint Closure",
+        "",
+        "- commit policy: commit-on-success for git projects.",
+        "- stage policy: stage only loop-owned paths plus .ai/loops/state.json and the current report.",
+        "- push policy: never push unless the owner explicitly asks.",
+        "- no-op policy: no commit when the loop changes no files.",
+        "- blocked policy: if a successful loop changed files but cannot create a commit, write Clean completion: no and list the uncommitted paths.",
+        "",
         "## Permission Boundary",
         "",
         "- read-only connectors: allowed when needed for evidence.",
@@ -224,6 +239,16 @@ if ((Test-Path -LiteralPath $statePath) -and -not $Force) {
         failures = @()
         completed_loops_since_step_back = 0
         last_report = $null
+        workspace = [ordered]@{
+            baseline_status = $null
+            owned_paths = @()
+            transient_paths = @()
+        }
+        checkpoint = [ordered]@{
+            policy = "commit-on-success"
+            baseline_head = $null
+            last_commit = $null
+        }
         updated_at = (Get-Date).ToUniversalTime().ToString("o")
     }
     $state | ConvertTo-Json -Depth 8 | Set-Content -LiteralPath $statePath -Encoding UTF8

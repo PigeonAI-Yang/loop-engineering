@@ -60,12 +60,12 @@ $profileText = Get-Content -LiteralPath $Profile -Raw
 if ($profileText -notmatch "# Loop Profile: check-bootstrap") {
     throw "Bootstrap profile has unexpected project name"
 }
-foreach ($requiredSection in @("## Loop Fit", "## Trigger / Cadence", "## Budget Guard", "## Permission Boundary")) {
+foreach ($requiredSection in @("## Loop Fit", "## Trigger / Cadence", "## Budget Guard", "## Workspace Hygiene", "## Checkpoint Closure", "## Permission Boundary")) {
     if ($profileText -notmatch [regex]::Escape($requiredSection)) {
         throw "Bootstrap profile missing required section: $requiredSection"
     }
 }
-foreach ($requiredLine in @("repeat condition:", "default trigger: manual", "max iterations:", "write-capable connectors:")) {
+foreach ($requiredLine in @("repeat condition:", "default trigger: manual", "max iterations:", "loop-owned paths:", "clean completion:", "commit policy: commit-on-success", "push policy: never push unless the owner explicitly asks", "write-capable connectors:")) {
     if ($profileText -notmatch [regex]::Escape($requiredLine)) {
         throw "Bootstrap profile missing required line: $requiredLine"
     }
@@ -83,6 +83,27 @@ if ($stateJson.completed_loops_since_step_back -ne 0) {
 }
 if (-not ($stateJson.PSObject.Properties.Name -contains "last_report")) {
     throw "Missing last_report in state.json"
+}
+if (-not ($stateJson.PSObject.Properties.Name -contains "workspace")) {
+    throw "Missing workspace in state.json"
+}
+$workspaceProps = $stateJson.workspace.PSObject.Properties.Name
+foreach ($requiredWorkspaceProp in @("baseline_status", "owned_paths", "transient_paths")) {
+    if (-not ($workspaceProps -contains $requiredWorkspaceProp)) {
+        throw "Missing workspace.$requiredWorkspaceProp in state.json"
+    }
+}
+if (-not ($stateJson.PSObject.Properties.Name -contains "checkpoint")) {
+    throw "Missing checkpoint in state.json"
+}
+$checkpointProps = $stateJson.checkpoint.PSObject.Properties.Name
+foreach ($requiredCheckpointProp in @("policy", "baseline_head", "last_commit")) {
+    if (-not ($checkpointProps -contains $requiredCheckpointProp)) {
+        throw "Missing checkpoint.$requiredCheckpointProp in state.json"
+    }
+}
+if ($stateJson.checkpoint.policy -ne "commit-on-success") {
+    throw "Unexpected checkpoint policy"
 }
 
 $resolvedTmpAfter = (Resolve-Path -LiteralPath $TmpRoot).Path

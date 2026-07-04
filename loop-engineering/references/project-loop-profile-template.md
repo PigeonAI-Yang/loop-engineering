@@ -70,6 +70,20 @@ not let the full reason become an island nobody reads.
 - max live actions:
 - max permissions:
 
+## Workspace Hygiene
+
+- start status:
+- loop-owned paths:
+- transient paths:
+- clean completion:
+
+## Checkpoint Closure
+
+- commit policy: commit-on-success for git projects
+- stage policy: only loop-owned paths plus `.ai/loops/state.json` and the current report
+- push policy: never push unless the owner explicitly asks
+- no-op policy: no commit when the loop changes no files
+
 ## Permission Boundary
 
 - read-only connectors:
@@ -136,6 +150,16 @@ If none exist, create a `plan-integrity` or `gate-building` loop first.
   "failures": [],
   "completed_loops_since_step_back": 0,
   "last_report": null,
+  "workspace": {
+    "baseline_status": null,
+    "owned_paths": [],
+    "transient_paths": []
+  },
+  "checkpoint": {
+    "policy": "commit-on-success",
+    "baseline_head": null,
+    "last_commit": null
+  },
   "updated_at": "ISO-8601"
 }
 ```

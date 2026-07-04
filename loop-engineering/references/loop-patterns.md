@@ -10,7 +10,7 @@ Pattern:
 
 ```text
 recall project purpose anchor -> task row -> inspect owned files -> implement
--> END-TO-END gate (not unit test) -> update ledger/report
+-> END-TO-END gate (not unit test) -> update ledger/report -> checkpoint commit
 ```
 
 The first and last steps are what separate this from rote task-chasing.
@@ -29,6 +29,9 @@ are. Wire it into the runtime, or move it back to pending. Do not mark done.
 A task whose output has no runtime consumer is an orphan even if its unit tests
 are green. This is the single most common false-done failure mode: code that
 works in isolation but is never reached by the running system.
+
+Before marking done in a git project, commit the loop-owned changes as one local
+checkpoint. Do not leave a successful loop's changes only in the working tree.
 
 Do not use this loop when the task source is vague or no end-to-end gate is
 possible — if you cannot prove the downstream consumes the output, you cannot
@@ -89,7 +92,7 @@ Use at the end of a feature.
 Pattern:
 
 ```text
-focused gates -> global gate -> ledger/changelog -> git status -> commit/push if requested
+focused gates -> global gate -> ledger/changelog -> checkpoint commit -> push if requested
 ```
 
 Never use release closure to upgrade a partial capability into product completion without the project's completion authority.
