@@ -170,6 +170,9 @@ Default policy:
   report when they exist
 - create one local commit with a short message such as
   `<loop-type>: <task summary>`
+- if the commit is amended, rebased, squashed, or otherwise replaced, discard
+  any earlier hash and re-read the final hash with `git rev-parse --short HEAD`
+  after the last git mutation
 - run `git status --short` again; it must return to the baseline except for
   pre-existing dirty paths that were not owned by this loop
 - do not push, merge, tag, deploy, or notify without explicit owner approval
@@ -178,6 +181,12 @@ If there are no file changes, record `checkpoint: no-op`. If the commit cannot
 be created or the owner disables commits, write `Clean completion: no`, list the
 uncommitted paths, and stop. Do not call the loop done while its successful
 changes are still only in the working tree.
+
+Never claim a cached commit hash after an amend. Also do not try to store a
+commit's own final hash inside a tracked report that is included in that same
+commit; changing the report changes the commit hash. If a tracked report must
+record a checkpoint hash, record the hash of an already-created checkpoint
+commit, or put the report/hash sync in a separate metadata commit.
 
 ## Security Boundary
 
@@ -364,7 +373,8 @@ Gate: <must be an end-to-end proof, not a unit test. State the command run and
        test ran, write "UNIT-TEST-ONLY" here and do not mark done.>
 Workspace: <starting git status, owned paths, post-checkpoint git status, and
             any pre-existing dirty paths left untouched>
-Checkpoint: <commit hash, no-op, or blocked with uncommitted paths>
+Checkpoint: <final hash from `git rev-parse --short HEAD` after all commit/amend
+             operations, no-op, or blocked with uncommitted paths>
 Result:
 State update:
 Clean completion:

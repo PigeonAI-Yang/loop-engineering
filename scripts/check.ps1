@@ -65,7 +65,7 @@ foreach ($requiredSection in @("## Loop Fit", "## Trigger / Cadence", "## Budget
         throw "Bootstrap profile missing required section: $requiredSection"
     }
 }
-foreach ($requiredLine in @("repeat condition:", "default trigger: manual", "max iterations:", "loop-owned paths:", "clean completion:", "commit policy: commit-on-success", "push policy: never push unless the owner explicitly asks", "write-capable connectors:")) {
+foreach ($requiredLine in @("repeat condition:", "default trigger: manual", "max iterations:", "loop-owned paths:", "clean completion:", "commit policy: commit-on-success", "hash policy: re-read git rev-parse --short HEAD after the final commit or amend", "push policy: never push unless the owner explicitly asks", "write-capable connectors:")) {
     if ($profileText -notmatch [regex]::Escape($requiredLine)) {
         throw "Bootstrap profile missing required line: $requiredLine"
     }

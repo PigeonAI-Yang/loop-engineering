@@ -178,6 +178,7 @@ if ((Test-Path -LiteralPath $profilePath) -and -not $Force) {
         "",
         "- commit policy: commit-on-success for git projects.",
         "- stage policy: stage only loop-owned paths plus .ai/loops/state.json and the current report.",
+        "- hash policy: re-read git rev-parse --short HEAD after the final commit or amend; never self-reference a tracked report.",
         "- push policy: never push unless the owner explicitly asks.",
         "- no-op policy: no commit when the loop changes no files.",
         "- blocked policy: if a successful loop changed files but cannot create a commit, write Clean completion: no and list the uncommitted paths.",
